@@ -1,0 +1,56 @@
+{
+  "id": "plugin-couchdb",
+  "displayName": "Couch DB",
+  "description": "Publisher which connects to Couch DB",
+  "apiVersion": "2",
+  "versionDescription": "Version 2",
+  "version": "1.0.0",
+  "iconFile": "icon.jpg",
+  "executable": "PluginCouchDB",
+  "kind": "publisher",
+  "os": "$GOOS",
+  "arch": "$GOARCH",
+  "canProduceMultipleSchemas": true,
+  "canAcceptQueryBasedSchemas": true,
+  "canUseOAuth": false,
+  "canWrite": true,
+  "canConfigureReplication": true,
+  "canWriteReplication": true,
+  "configSchema": {
+    "ui": {
+      "ui:order": [
+        "Hostname",
+        "Username",
+        "Password"
+      ],
+      "Password": {
+        "ui:widget": "password"
+      }
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "Hostname" : {
+          "type": "string",
+          "title": "Hostname",
+          "description": "The hostname of the Sisense server ex. localhost:8081"
+        },
+        "Username": {
+          "type": "string",
+          "title": "Username",
+          "description": "The username to use for authentication"
+        },
+        "Password": {
+          "type": "string",
+          "title": "Password",
+          "description": "The password to use for authentication"
+        }
+      },
+      "required": [
+        "Hostname",
+        "Username",
+        "Password"
+      ]
+    }
+  }
+}
