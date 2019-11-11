@@ -118,7 +118,7 @@ namespace PluginCouchDB.Plugin
 
 
         /// <summary>
-        /// Discovers schemas located in the users Zoho CRM instance
+        /// Discovers schemas located in the users CouchDB instance
         /// </summary>
         /// <param name="request"></param>
         /// <param name="context"></param>
