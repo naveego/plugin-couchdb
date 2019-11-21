@@ -43,7 +43,7 @@ namespace PluginCouchDB.Helper
         /// <returns></returns>
         public string ToResourceUri(string resource)
         {
-            return String.Format("http://{0}/{1}", Hostname, resource.TrimStart('/'));
+            return String.Format("http://{0}:{1}@{2}/{3}", Username, Password, Hostname, resource.TrimStart('/'));
         }
     }
 }

@@ -16,6 +16,17 @@
   "canWrite": false,
   "canConfigureReplication": true,
   "canWriteReplication": true,
+  "querySchema": {
+    "ui": {
+      "ui:widget": "code",
+      "ui:options": {
+        "language": "json"
+      }
+    },
+    "schema": {
+      "type": "string"
+    }
+  },
   "configSchema": {
     "ui": {
       "ui:order": [

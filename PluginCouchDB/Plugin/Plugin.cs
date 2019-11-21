@@ -74,7 +74,8 @@ namespace PluginCouchDB.Plugin
             // attempt to call the CouchDB API api
             try
             {
-                var response = await _client.GetAsync($"{_server.Settings.DatabaseName}/_all_dbs");
+                Logger.Info("Tying to get connect to CouchDB");
+                var response = await _client.GetAsync("_all_dbs");
                 response.EnsureSuccessStatusCode();
 
                 _server.Connected = true;
