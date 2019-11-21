@@ -10,7 +10,7 @@ using Record = Pub.Record;
 
 namespace PluginCouchDB.Test
 {
-    public class UnitTest1
+    public class PluginTest
     {
         private ConnectRequest GetConnectSettings()
         {
@@ -292,7 +292,7 @@ namespace PluginCouchDB.Test
         }
 
         [Fact]
-        public async Task WriteStreamTest()
+        public async Task WriteStreamReplicationTest()
         {
             // set up
             Server server = new Server

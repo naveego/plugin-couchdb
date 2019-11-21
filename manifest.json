@@ -13,7 +13,7 @@
   "canProduceMultipleSchemas": true,
   "canAcceptQueryBasedSchemas": true,
   "canUseOAuth": false,
-  "canWrite": true,
+  "canWrite": false,
   "canConfigureReplication": true,
   "canWriteReplication": true,
   "configSchema": {
@@ -21,7 +21,8 @@
       "ui:order": [
         "Hostname",
         "Username",
-        "Password"
+        "Password",
+        "DatabaseName"
       ],
       "Password": {
         "ui:widget": "password"
@@ -33,7 +34,7 @@
         "Hostname" : {
           "type": "string",
           "title": "Hostname",
-          "description": "The hostname of the Sisense server ex. localhost:8081"
+          "description": "The hostname of the CouchDB server ex. localhost:5984"
         },
         "Username": {
           "type": "string",
@@ -44,12 +45,18 @@
           "type": "string",
           "title": "Password",
           "description": "The password to use for authentication"
+        },
+        "DatabaseName": {
+          "type": "string",
+          "title": "Database Name",
+          "description": "Name for your data source in CouchDB"
         }
       },
       "required": [
         "Hostname",
         "Username",
-        "Password"
+        "Password",
+        "DatabaseName"
       ]
     }
   }

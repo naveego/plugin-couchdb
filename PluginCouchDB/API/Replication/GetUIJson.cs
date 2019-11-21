@@ -12,18 +12,7 @@ namespace PluginCouchDB.API.Replication
                 {
                     "ui:order", new[]
                     {
-                        "host",
-                        "port",
-                        "DatabaseName",
-                        "auth",
-                        "username",
-                        "password"
-                    }
-                },
-                {
-                    "password", new Dictionary<string, object>
-                    {
-                        {"ui:widget", "password"}
+                        "DatabaseName"
                     }
                 }
             };
