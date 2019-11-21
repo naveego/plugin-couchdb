@@ -21,7 +21,7 @@ namespace PluginCouchDB.API.Discover
             var discoveredPropertyType = new Dictionary<string, Dictionary<PropertyType, int>>();
             foreach (JObject document in documents)
             {
-                if (readDocsCount > Math.Min(limit, docCount)) break;
+                if (readDocsCount >= Math.Min(limit, docCount)) break;
                 foreach (JProperty property in document.Properties())
                 {
                     if (!discoveredPropertyType.ContainsKey(property.Name))
@@ -35,9 +35,8 @@ namespace PluginCouchDB.API.Discover
                     {
                         discoveredPropertyType[property.Name][GetPropertyType(property.Value.ToString())] += 1;
                     }
-
-                    readDocsCount++;
                 }
+                readDocsCount++;
             }
 
             return discoveredPropertyType;

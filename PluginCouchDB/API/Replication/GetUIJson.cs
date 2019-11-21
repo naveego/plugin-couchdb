@@ -14,7 +14,6 @@ namespace PluginCouchDB.API.Replication
                     {
                         "host",
                         "port",
-                        "instance",
                         "DatabaseName",
                         "auth",
                         "username",
