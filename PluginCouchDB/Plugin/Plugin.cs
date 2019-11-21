@@ -1,10 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using Grpc.Core;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using PluginCouchDB.API.Discover;
+using PluginCouchDB.API.Read;
 using PluginCouchDB.API.Replication;
 using PluginCouchDB.DataContracts;
 using PluginCouchDB.Helper;
@@ -66,10 +71,10 @@ namespace PluginCouchDB.Plugin
                 throw;
             }
 
-            // attempt to call the Legacy API api
+            // attempt to call the CouchDB API api
             try
             {
-                var response = await _client.GetAsync("connection");
+                var response = await _client.GetAsync($"{_server.Settings.DatabaseName}/_all_dbs");
                 response.EnsureSuccessStatusCode();
 
                 _server.Connected = true;
@@ -118,7 +123,7 @@ namespace PluginCouchDB.Plugin
 
 
         /// <summary>
-        /// Discovers schemas located in the users Zoho CRM instance
+        /// Discovers schemas located in the users CouchDB instance
         /// </summary>
         /// <param name="request"></param>
         /// <param name="context"></param>
@@ -128,43 +133,38 @@ namespace PluginCouchDB.Plugin
         {
             Logger.Info("Discovering Schemas...");
 
-            // get a schema for each module found
             DiscoverSchemasResponse discoverSchemasResponse = new DiscoverSchemasResponse();
-//            try
-//            {
-//                var schemas = await Discover.GetAllReadSchemas(_client, _server.Settings);
-//                
-//                discoverSchemasResponse.Schemas.AddRange(schemas);
-//            }
-//            catch (Exception e)
-//            {
-//                Logger.Error(e.Message);
-//                throw;
-//            }
-//
-//            Logger.Info($"Schemas found: {discoverSchemasResponse.Schemas.Count}");
-//
-//            // only return requested schemas if refresh mode selected
-//            if (request.Mode == DiscoverSchemasRequest.Types.Mode.Refresh)
-//            {
-//                var refreshSchemaIds = request.ToRefresh.Select(x => x.Id);
-//                var schemas =
-//                    JsonConvert.DeserializeObject<Schema[]>(
-//                        JsonConvert.SerializeObject(discoverSchemasResponse.Schemas));
-//                discoverSchemasResponse.Schemas.Clear();
-//                discoverSchemasResponse.Schemas.AddRange(schemas.Where(x => refreshSchemaIds.Contains(x.Id)));
-//                
-//
-//                Logger.Debug($"Schemas found: {JsonConvert.SerializeObject(schemas)}");
-//                Logger.Debug($"Refresh requested on schemas: {refreshSchemaIds}");
-//
-//                Logger.Info($"Schemas returned: {discoverSchemasResponse.Schemas.Count}");
-//                return discoverSchemasResponse;
-//            }
-//
-//            // return all schemas otherwise
-//            Logger.Info($"Schemas returned: {discoverSchemasResponse.Schemas.Count}");
-            return discoverSchemasResponse;
+
+            // only return requested schemas if refresh mode selected
+            if (request.Mode == DiscoverSchemasRequest.Types.Mode.All)
+            {
+                Logger.Info("Plugin does not support auto schema discovery.");
+                return discoverSchemasResponse;
+            }
+
+            try
+            {
+                var refreshSchemas = request.ToRefresh;
+
+                Logger.Info($"Refresh schemas attempted: {refreshSchemas.Count}");
+
+                var tasks = refreshSchemas.Select(GetSchemaProperties)
+                    .ToArray();
+
+                await Task.WhenAll(tasks);
+
+                discoverSchemasResponse.Schemas.AddRange(tasks.Where(x => x.Result != null).Select(x => x.Result));
+
+                // return all schemas
+                Logger.Info($"Schemas returned: {discoverSchemasResponse.Schemas.Count}");
+
+                return discoverSchemasResponse;
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e.Message);
+                throw;
+            }
         }
 
         /// <summary>
@@ -177,7 +177,82 @@ namespace PluginCouchDB.Plugin
         public override async Task ReadStream(ReadRequest request, IServerStreamWriter<Record> responseStream,
             ServerCallContext context)
         {
-            //Read.GetAllRecords()
+            var schema = request.Schema;
+            var limit = request.Limit;
+            var limitFlag = request.Limit != 0;
+
+            Logger.Info($"Publishing records for schema: {schema.Name}");
+
+            try
+            {
+                // check if query is empty
+                if (string.IsNullOrWhiteSpace(schema.Query))
+                {
+                    Logger.Info("Query not defined.");
+                    return;
+                }
+
+                // build read record couchDB query
+                ReadQuery readQuery = new ReadQuery
+                {
+                    fields = new List<string>(),
+                    selector = JsonConvert.SerializeObject("{}")
+                };
+
+                // set limit to couchDB query if limitFlag is on
+                if (limitFlag)
+                {
+                    readQuery.limit = limit;
+                }
+
+                foreach (Property property in schema.Properties)
+                {
+                    readQuery.fields.Add(property.Name);
+                }
+
+                var couchdbReadRecordQuery = JsonConvert.SerializeObject(readQuery);
+
+                // read record from couchDB
+                Logger.Info($"Reading records from {_server.Settings.DatabaseName} database");
+                var readRecordUri = $"{_server.Settings.DatabaseName}/_find";
+                var response = await _client.PostAsync(readRecordUri, new StringContent(couchdbReadRecordQuery));
+                response.EnsureSuccessStatusCode();
+
+                var documents = JObject.Parse(await response.Content.ReadAsStringAsync())["docs"];
+
+                // build record map
+                if (documents.ToList().Count > 0)
+                {
+                    foreach (JObject document in documents)
+                    {
+                        // build record map
+                        var recordMap = new Dictionary<string, object>();
+                        foreach (JProperty property in document.Properties())
+                        {
+                            recordMap[property.Name] = property.Value;
+                        }
+
+                        //create record
+                        var record = new Record
+                        {
+                            Action = Record.Types.Action.Upsert,
+                            DataJson = JsonConvert.SerializeObject(recordMap)
+                        };
+
+                        //publish record
+                        await responseStream.WriteAsync(record);
+                    }
+                }
+                else
+                {
+                    Logger.Info("No record read from database.");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e.Message);
+                throw;
+            }
         }
 
         /// <summary>
@@ -216,7 +291,7 @@ namespace PluginCouchDB.Plugin
                     Form = new ConfigurationFormResponse
                     {
                         DataJson = request.Form.DataJson,
-                        Errors = { e.Message },
+                        Errors = {e.Message},
                         SchemaJson = schemaJson,
                         UiJson = uiJson,
                         StateJson = request.Form.StateJson
@@ -242,7 +317,7 @@ namespace PluginCouchDB.Plugin
                 Schema = request.Schema,
                 Replication = request.Replication
             };
-            
+
             _server.WriteSettings = writeSettings;
             _server.WriteConfigured = true;
 
@@ -280,11 +355,13 @@ namespace PluginCouchDB.Plugin
 
                     if (_server.WriteSettings.IsReplication())
                     {
-                        var config = JsonConvert.DeserializeObject<ConfigureReplicationFormData>(_server.WriteSettings.Replication.SettingsJson);
-                        
+                        var config =
+                            JsonConvert.DeserializeObject<ConfigureReplicationFormData>(_server.WriteSettings
+                                .Replication.SettingsJson);
+
                         // send record to source system
                         // timeout if it takes longer than the sla
-                        var task = Task.Run(() => Replication.WriteRecord(schema, record, config));
+                        var task = Task.Run(() => Replication.WriteRecord(_client, schema, record, config));
                         if (task.Wait(TimeSpan.FromSeconds(sla)))
                         {
                             // send ack
@@ -313,8 +390,7 @@ namespace PluginCouchDB.Plugin
                     }
                     else
                     {
-                        // TODO: write backs
-                        throw new Exception("Only replication writebacks are supported");
+                        throw new Exception("Only replication writeback are supported");
                     }
                 }
 
@@ -348,6 +424,98 @@ namespace PluginCouchDB.Plugin
 
             Logger.Info("Disconnected");
             return Task.FromResult(new DisconnectResponse());
+        }
+
+        /// <summary>
+        /// Gets a schema for a given query
+        /// </summary>
+        /// <param name="schema"></param>
+        /// <returns>A schema or null</returns>
+        private async Task<Schema> GetSchemaProperties(Schema schema)
+        {
+            try
+            {
+                //check if query is empty or invalid json
+                if (string.IsNullOrWhiteSpace(schema.Query) || !IsValidJson(schema.Query))
+                {
+                    Logger.Error("Invalid schema query");
+                    return null;
+                }
+
+                // add "_id", "_rev" as required field
+                var schemaQueryJson = JObject.Parse(schema.Query);
+                var getSchemaUri = $"{_server.Settings.DatabaseName}/_find";
+                var response = await _client.PostAsync(getSchemaUri,
+                    new StringContent(Discover.GetValidSchemaQuery(schemaQueryJson)));
+                response.EnsureSuccessStatusCode();
+
+                var documents = JObject.Parse(await response.Content.ReadAsStringAsync())["docs"];
+
+                // get each field and create a property for the field
+                Logger.Info($"Getting property type for all {documents.ToList().Count} documents");
+                if (documents.ToList().Count > 0)
+                {
+                    var discoveredPropertyTypes = Discover.GetPropertyTypes(documents, 100);
+                    foreach (KeyValuePair<string, Dictionary<PropertyType, int>> entry in discoveredPropertyTypes)
+                    {
+                        var propertyTypeofMaxValue = entry.Value.Aggregate((x, y) => x.Value > y.Value ? x : y).Key;
+                        // create property
+                        var property = new Property
+                        {
+                            Id = entry.Key,
+                            Name = entry.Key,
+                            Description = "",
+                            Type = propertyTypeofMaxValue,
+                            IsKey = false,
+                            IsCreateCounter = false,
+                            IsUpdateCounter = false,
+                            PublisherMetaJson = ""
+                        };
+                        schema.Properties.Add(property);
+                    }
+                }
+                else
+                {
+                    schema = null;
+                }
+
+                return schema;
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e.Message);
+                return null;
+            }
+        }
+
+        private static bool IsValidJson(string strInput)
+        {
+            strInput = strInput.Trim();
+            if ((strInput.StartsWith("{") && strInput.EndsWith("}")) || //For object
+                (strInput.StartsWith("[") && strInput.EndsWith("]"))) //For array
+            {
+                try
+                {
+                    var obj = JToken.Parse(strInput);
+                    return true;
+                }
+                catch (JsonReaderException jex)
+                {
+                    //Exception in parsing json
+                    Logger.Error(jex.Message);
+                    return false;
+                }
+                catch (Exception ex) //some other exception
+                {
+                    Logger.Error(ex.ToString());
+                    return false;
+                }
+            }
+            else
+            {
+                Logger.Error("Content must be application/json");
+                return false;
+            }
         }
     }
 }

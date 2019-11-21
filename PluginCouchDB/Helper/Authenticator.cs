@@ -20,7 +20,7 @@ namespace PluginCouchDB.Helper
         }
 
         /// <summary>
-        /// Get a token for the Sisense API
+        /// Get a token for the CouchDB API
         /// </summary>
         /// <returns></returns>
         public string GetToken()

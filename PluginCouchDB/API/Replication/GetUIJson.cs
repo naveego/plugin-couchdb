@@ -9,10 +9,24 @@ namespace PluginCouchDB.API.Replication
         {
             var uiJsonObj = new Dictionary<string, object>
             {
-                {"ui:order", new []
                 {
-                    "ShapeName"
-                }}
+                    "ui:order", new[]
+                    {
+                        "host",
+                        "port",
+                        "instance",
+                        "DatabaseName",
+                        "auth",
+                        "username",
+                        "password"
+                    }
+                },
+                {
+                    "password", new Dictionary<string, object>
+                    {
+                        {"ui:widget", "password"}
+                    }
+                }
             };
 
 //            var uiJsonObj = new Dictionary<string, object>();

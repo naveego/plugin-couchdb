@@ -10,22 +10,26 @@ namespace PluginCouchDB.API.Replication
             var schemaJsonObj = new Dictionary<string, object>
             {
                 {"type", "object"},
-                {"properties", new Dictionary<string, object>
                 {
-                    {"ShapeName", new Dictionary<string, string>
+                    "properties", new Dictionary<string, object>
                     {
-                        {"type", "string"},
-                        {"title", "Shape Name"},
-                        {"description", "Name for your data source in Sisense"},
-                    }},
-                }},
-                {"required", new []
+                        {
+                            "DatabaseName", new Dictionary<string, string>
+                            {
+                                {"type", "string"},
+                                {"title", "Database Name"},
+                                {"description", "Name for your data source in CouchDB"},
+                            }
+                        },
+                    }
+                },
                 {
-                    "ShapeName"
-                }}
+                    "required", new[]
+                    {
+                        "DatabaseName"
+                    }
+                }
             };
-
-//            var schemaJsonObj = new Dictionary<string, object>();
 
             return JsonConvert.SerializeObject(schemaJsonObj);
         }
