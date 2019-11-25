@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace PluginCouchDB.API.Read
 {
@@ -6,8 +8,9 @@ namespace PluginCouchDB.API.Read
     {
         public List<string> fields { get; set; }
 
-        public uint limit { get; set; }
+        [JsonProperty("limit", NullValueHandling = NullValueHandling.Ignore, Required = Required.AllowNull)]
+        public uint? limit { get; set; }
 
-        public string selector { get; set; }
+        public JObject selector { get; set; }
     }
 }

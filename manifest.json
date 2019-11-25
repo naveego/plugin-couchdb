@@ -4,7 +4,7 @@
   "description": "Publisher which connects to Couch DB",
   "apiVersion": "2",
   "versionDescription": "Version 2",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "iconFile": "icon.jpg",
   "executable": "PluginCouchDB",
   "kind": "publisher",

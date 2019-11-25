@@ -33,7 +33,15 @@ namespace PluginCouchDB.API.Discover
                     }
                     else
                     {
-                        discoveredPropertyType[property.Name][GetPropertyType(property.Value.ToString())] += 1;
+                        if (discoveredPropertyType[property.Name].ContainsKey(GetPropertyType(property.Value.ToString())))
+                        {
+                            discoveredPropertyType[property.Name][GetPropertyType(property.Value.ToString())] += 1;
+                        }
+                        else
+                        {
+                            discoveredPropertyType[property.Name].Add(GetPropertyType(property.Value.ToString()), 1);
+                        }
+                        
                     }
                 }
                 readDocsCount++;

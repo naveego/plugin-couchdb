@@ -25,14 +25,14 @@ namespace PluginCouchDB.Test
         {
             var mockHttp = new MockHttpMessageHandler();
 
-            mockHttp.When("http://hostname/DatabaseName/_find")
+            mockHttp.When("http://test:password@hostname/DatabaseName/_find")
                 .Respond("application/json",
-                    "{\"docs\":[{\"_id\":\"176694\", \"title\":\"Test\"},{\"_id\":\"176695\",\"title\":\"Test\"}]}");
+                    "{\"docs\":[{\"_id\":\"1000\", \"title\":\"Test1\"},{\"_id\":\"1001\",\"title\":\"Test2\"},{\"_id\":\"6e1295ed6c\", \"title\":\"Test3\"},{\"_id\":\"6e1295ed6b\",\"title\":\"Test4\"},{\"_id\":\"6e1295ed6e\",\"title\":\"Test5\"}]}");
 
-            mockHttp.When("http://hostname/DatabaseName/_all_dbs")
+            mockHttp.When("http://test:password@hostname/_all_dbs")
                 .Respond("application/json", "{}");
 
-            mockHttp.When("http://hostname/DatabaseName/_all_docs")
+            mockHttp.When("http://test:password@hostname/DatabaseName/_all_docs")
                 .Respond("application/json",
                     "{\"rows\":[{\"id\":\"176694\", \"value\":{\"rev\":\"1-967\"}},{\"id\":\"176695\", \"value\":{\"rev\":\"1-968\"}}]}");
 
@@ -62,7 +62,7 @@ namespace PluginCouchDB.Test
                     RecordId = "new-id",
                     CorrelationId = "test",
                     Action = Record.Types.Action.Insert,
-                    DataJson = "{\"_id\":\"12345\",\"title\":\"test\"}"
+                    DataJson = "{\"_id\":\"12345\",\"title\":\"test\",\"_rev\":\"334432\"}"
                 }
             };
         }
@@ -173,7 +173,7 @@ namespace PluginCouchDB.Test
             var firstProperty = schema.Properties[0];
             Assert.Equal("_id", firstProperty.Id);
             Assert.Equal("_id", firstProperty.Name);
-            Assert.Equal(PropertyType.Integer, firstProperty.Type);
+            Assert.Equal(PropertyType.String, firstProperty.Type);
 
             var secondProperty = schema.Properties[1];
             Assert.Equal("title", secondProperty.Id);
@@ -231,7 +231,7 @@ namespace PluginCouchDB.Test
             }
 
             // assert
-            Assert.Equal(2, records.Count);
+            Assert.Equal(5, records.Count);
 
             // cleanup
             await channel.ShutdownAsync();

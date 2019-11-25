@@ -180,12 +180,13 @@ namespace PluginCouchDB.Plugin
         {
             var schema = request.Schema;
             var limit = request.Limit;
-            var limitFlag = request.Limit != 0;
+            var limitFlag = request.Limit > 0;
 
             Logger.Info($"Publishing records for schema: {schema.Name}");
 
             try
             {
+                var recordsCount = 0;
                 // check if query is empty
                 if (string.IsNullOrWhiteSpace(schema.Query))
                 {
@@ -197,7 +198,7 @@ namespace PluginCouchDB.Plugin
                 ReadQuery readQuery = new ReadQuery
                 {
                     fields = new List<string>(),
-                    selector = JsonConvert.SerializeObject("{}")
+                    selector = new JObject()
                 };
 
                 // set limit to couchDB query if limitFlag is on
@@ -215,8 +216,10 @@ namespace PluginCouchDB.Plugin
 
                 // read record from couchDB
                 Logger.Info($"Reading records from {_server.Settings.DatabaseName} database");
+
                 var readRecordUri = $"{_server.Settings.DatabaseName}/_find";
-                var response = await _client.PostAsync(readRecordUri, new StringContent(couchdbReadRecordQuery));
+                var response = await _client.PostAsync(readRecordUri,
+                    new StringContent(couchdbReadRecordQuery, Encoding.UTF8, "application/json"));
                 response.EnsureSuccessStatusCode();
 
                 var documents = JObject.Parse(await response.Content.ReadAsStringAsync())["docs"];
@@ -242,7 +245,10 @@ namespace PluginCouchDB.Plugin
 
                         //publish record
                         await responseStream.WriteAsync(record);
+                        recordsCount++;
                     }
+
+                    Logger.Info($"Published {recordsCount} records");
                 }
                 else
                 {
@@ -436,6 +442,8 @@ namespace PluginCouchDB.Plugin
         {
             try
             {
+                if (schema.Properties.Count > 0) return schema;
+
                 //check if query is empty or invalid json
                 if (string.IsNullOrWhiteSpace(schema.Query) || !IsValidJson(schema.Query))
                 {
@@ -444,10 +452,13 @@ namespace PluginCouchDB.Plugin
                 }
 
                 // add "_id", "_rev" as required field
+                Logger.Info("getting couchdb response for schema discovery");
                 var schemaQueryJson = JObject.Parse(schema.Query);
                 var getSchemaUri = $"{_server.Settings.DatabaseName}/_find";
                 var response = await _client.PostAsync(getSchemaUri,
-                    new StringContent(Discover.GetValidSchemaQuery(schemaQueryJson)));
+                    new StringContent(Discover.GetValidSchemaQuery(schemaQueryJson), Encoding.UTF8,
+                        "application/json"));
+                //Logger.Info($"discover schema response: {await response.Content.ReadAsStringAsync()}");
                 response.EnsureSuccessStatusCode();
 
                 var documents = JObject.Parse(await response.Content.ReadAsStringAsync())["docs"];

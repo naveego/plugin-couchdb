@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using PluginCouchDB.DataContracts;
@@ -30,6 +31,11 @@ namespace PluginCouchDB.API.Replication
                 var recordData = GetNamedRecordData(schema, record);
                 var databaseName = string.Concat(config.DatabaseName.Where(c => !char.IsWhiteSpace(c)));
 
+                // get recordId and remove "_id" & "_rev" fields from http put body
+                var recordId = recordData["_id"];
+                recordData.Remove("_id");
+                recordData.Remove("_rev");
+
                 // get all the golden records from the database
                 var response = await client.GetAsync($"/{databaseName}/_all_docs");
                 response.EnsureSuccessStatusCode();
@@ -37,19 +43,15 @@ namespace PluginCouchDB.API.Replication
                     .ToObject<List<JObject>>();
 
                 // get and check previous record
-                var previousRecord = goldenRecord.Find(r => record.RecordId == r.GetValue("id").ToString());
+                var previousRecord = goldenRecord.Find(r => recordId.ToString() == r.GetValue("id").ToString());
+                //Logger.Info($"previous record: {JsonConvert.SerializeObject(previousRecord, Formatting.Indented)}");
                 if (previousRecord == null && recordData.Count != 0)
                 {
                     // set previous record to current record
                     Logger.Info($"databaseName:{databaseName} | recordId: {record.RecordId} - INSERT");
-                    var currentGoldenRecord = new GoldenRecord
-                    {
-                        RecordId = record.RecordId,
-                        Data = recordData
-                    };
-                    var createDocUri = $"/{databaseName}/{record.RecordId}";
+                    var createDocUri = $"/{databaseName}/{recordId}";
                     await client.PutAsync(createDocUri,
-                        new StringContent(JsonConvert.SerializeObject(currentGoldenRecord)));
+                        new StringContent(JsonConvert.SerializeObject(recordData), Encoding.UTF8, "application/json"));
                     return "";
                 }
 
@@ -60,7 +62,7 @@ namespace PluginCouchDB.API.Replication
                     {
                         Logger.Info($"databaseName:{databaseName} | recordId: {record.RecordId} - DELETE");
                         var deleteDocUri =
-                            $"/{databaseName}/{record.RecordId}?{previousRecord.GetValue("value")["rev"]}";
+                            $"/{databaseName}/{recordId}?{previousRecord.GetValue("value")["rev"]}";
                         await client.DeleteAsync(deleteDocUri);
                     }
                 }
@@ -68,10 +70,11 @@ namespace PluginCouchDB.API.Replication
                 {
                     // update record and remove/add version
                     Logger.Info($"shapeId; {databaseName} | recordId: {record.RecordId} - UPSERT");
-                    var reviseDocUri = $"/{databaseName}/{record.RecordId}";
+                    var reviseDocUri = $"/{databaseName}/{recordId}";
                     // add _rev to recordData
                     recordData.Add("_rev", previousRecord.GetValue("value")["rev"]);
-                    await client.PutAsync(reviseDocUri, new StringContent(JsonConvert.SerializeObject(recordData)));
+                    await client.PutAsync(reviseDocUri,
+                        new StringContent(JsonConvert.SerializeObject(recordData), Encoding.UTF8, "application/json"));
                 }
 
                 return "";
