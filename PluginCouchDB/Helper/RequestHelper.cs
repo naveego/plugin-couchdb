@@ -42,10 +42,9 @@ namespace PluginCouchDB.Helper
             try
             {
                 var uri = _settings.ToResourceUri(resource);
-                
                 var client = _client;
                 //client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", token);
-
+                Logger.Info($"get request: {uri}");
                 var response = await client.GetAsync(uri);
 
                 return response;

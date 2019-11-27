@@ -1,4 +1,5 @@
 using System;
+using System.Web;
 
 namespace PluginCouchDB.Helper
 {
@@ -43,7 +44,9 @@ namespace PluginCouchDB.Helper
         /// <returns></returns>
         public string ToResourceUri(string resource)
         {
-            return String.Format("http://{0}:{1}@{2}/{3}", Username, Password, Hostname, resource.TrimStart('/'));
+            var uri = String.Format("http://{0}:{1}@{2}/{3}", HttpUtility.UrlEncode(Username),
+                HttpUtility.UrlEncode(Password), Hostname, resource.TrimStart('/'));
+            return uri;
         }
     }
 }
