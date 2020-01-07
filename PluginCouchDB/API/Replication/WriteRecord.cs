@@ -32,19 +32,25 @@ namespace PluginCouchDB.API.Replication
                 var databaseName = string.Concat(config.DatabaseName.Where(c => !char.IsWhiteSpace(c)));
 
                 // get recordId and remove "_id" & "_rev" fields from http put body
+                Logger.Info($"receive record: {recordData["_id"]}");
                 var recordId = recordData["_id"];
                 recordData.Remove("_id");
                 recordData.Remove("_rev");
 
                 // get all the golden records from the database
+                Logger.Info("get all golden record from the database");
                 var response = await client.GetAsync($"/{databaseName}/_all_docs");
                 response.EnsureSuccessStatusCode();
                 var goldenRecord = JObject.Parse(await response.Content.ReadAsStringAsync())["rows"]
                     .ToObject<List<JObject>>();
 
                 // get and check previous record
-                var previousRecord = goldenRecord.Find(r => recordId.ToString() == r.GetValue("id").ToString());
+                Logger.Info("get previous record");
+                var previousRecord = goldenRecord.Count > 0
+                    ? goldenRecord.Find(r => recordId.ToString() == r.GetValue("id").ToString())
+                    : null;
                 //Logger.Info($"previous record: {JsonConvert.SerializeObject(previousRecord, Formatting.Indented)}");
+
                 if (previousRecord == null && recordData.Count != 0)
                 {
                     // set previous record to current record
@@ -55,26 +61,26 @@ namespace PluginCouchDB.API.Replication
                     return "";
                 }
 
-                if (recordData.Count == 0)
+                if (previousRecord != null)
                 {
-                    // delete everything for this record
-                    if (previousRecord != null)
+                    if (recordData.Count == 0)
                     {
                         Logger.Info($"databaseName:{databaseName} | recordId: {record.RecordId} - DELETE");
                         var deleteDocUri =
                             $"/{databaseName}/{recordId}?{previousRecord.GetValue("value")["rev"]}";
                         await client.DeleteAsync(deleteDocUri);
                     }
-                }
-                else
-                {
-                    // update record and remove/add version
-                    Logger.Info($"shapeId; {databaseName} | recordId: {record.RecordId} - UPSERT");
-                    var reviseDocUri = $"/{databaseName}/{recordId}";
-                    // add _rev to recordData
-                    recordData.Add("_rev", previousRecord.GetValue("value")["rev"]);
-                    await client.PutAsync(reviseDocUri,
-                        new StringContent(JsonConvert.SerializeObject(recordData), Encoding.UTF8, "application/json"));
+                    else
+                    {
+                        // update record and remove/add version
+                        Logger.Info($"shapeId; {databaseName} | recordId: {record.RecordId} - UPSERT");
+                        var reviseDocUri = $"/{databaseName}/{recordId}";
+                        // add _rev to recordData
+                        recordData.Add("_rev", previousRecord.GetValue("value")["rev"]);
+                        await client.PutAsync(reviseDocUri,
+                            new StringContent(JsonConvert.SerializeObject(recordData), Encoding.UTF8,
+                                "application/json"));
+                    }
                 }
 
                 return "";

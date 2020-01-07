@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using Grpc.Core;
@@ -78,6 +80,10 @@ namespace PluginCouchDB.Plugin
                 var response = await _client.GetAsync("_all_dbs");
                 response.EnsureSuccessStatusCode();
 
+                // check if database existed
+                var existingDatabase = JArray.Parse(await response.Content.ReadAsStringAsync());
+                var isDatabaseExist = existingDatabase.ToArray().Contains(_server.Settings.DatabaseName);
+                if (!isDatabaseExist) throw new System.Exception("Database does not exist!");
                 _server.Connected = true;
                 Logger.Info("Connected to CouchDB API");
             }
@@ -276,8 +282,11 @@ namespace PluginCouchDB.Plugin
             var schemaJson = Replication.GetSchemaJson();
             var uiJson = Replication.GetUIJson();
 
+            //user provided database name should only lowercase characters, digits and mush start with a letter
             try
             {
+                var databaseName = (string) JObject.Parse(request.Form?.DataJson).SelectToken("DatabaseName");
+                if (!IsValidDatabaseName(databaseName)) throw new System.Exception("Not a valid database name!");
                 return Task.FromResult(new ConfigureReplicationResponse
                 {
                     Form = new ConfigurationFormResponse
@@ -313,23 +322,50 @@ namespace PluginCouchDB.Plugin
         /// <param name="request"></param>
         /// <param name="context"></param>
         /// <returns></returns>
-        public override Task<PrepareWriteResponse> PrepareWrite(PrepareWriteRequest request, ServerCallContext context)
+        public override async Task<PrepareWriteResponse> PrepareWrite(PrepareWriteRequest request,
+            ServerCallContext context)
         {
-            Logger.Info("Preparing write...");
-            _server.WriteConfigured = false;
-
-            var writeSettings = new WriteSettings
+            try
             {
-                CommitSLA = request.CommitSlaSeconds,
-                Schema = request.Schema,
-                Replication = request.Replication
-            };
+                Logger.Info("Preparing write...");
+                _server.WriteConfigured = false;
 
-            _server.WriteSettings = writeSettings;
-            _server.WriteConfigured = true;
+                var writeSettings = new WriteSettings
+                {
+                    CommitSLA = request.CommitSlaSeconds,
+                    Schema = request.Schema,
+                    Replication = request.Replication
+                };
 
-            Logger.Info("Write prepared.");
-            return Task.FromResult(new PrepareWriteResponse());
+                _server.WriteSettings = writeSettings;
+                _server.WriteConfigured = true;
+
+                //create replication database for user
+                if (_server.WriteSettings.IsReplication())
+                {
+                    var config =
+                        JsonConvert.DeserializeObject<ConfigureReplicationFormData>(_server.WriteSettings
+                            .Replication.SettingsJson);
+                    var databaseName = string.Concat(config.DatabaseName.Where(c => !char.IsWhiteSpace(c)));
+                    // create replication database
+                    Logger.Info($"creating database: {databaseName} for replication");
+                    var response = await _client.PutDataBaseAsync(databaseName, new StringContent("{}"));
+                    var isSuccessResponse = response.StatusCode == HttpStatusCode.PreconditionFailed ||
+                                            response.IsSuccessStatusCode;
+                    if (!isSuccessResponse)
+                    {
+                        response.EnsureSuccessStatusCode();
+                    }
+                }
+
+                Logger.Info("Write prepared.");
+                return await Task.FromResult(new PrepareWriteResponse());
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e.Message);
+                throw;
+            }
         }
 
         /// <summary>
@@ -352,6 +388,7 @@ namespace PluginCouchDB.Plugin
                 var outCount = 0;
 
                 // get next record to publish while connected and configured
+                //Logger.Info($"server is connected: {_server.Connected}, server is writeconfigured: {_server.WriteConfigured}");
                 while (await requestStream.MoveNext(context.CancellationToken) && _server.Connected &&
                        _server.WriteConfigured)
                 {
@@ -368,6 +405,7 @@ namespace PluginCouchDB.Plugin
 
                         // send record to source system
                         // timeout if it takes longer than the sla
+                        Logger.Info($"send record: {record.RecordId} to source system");
                         var task = Task.Run(() => Replication.WriteRecord(_client, schema, record, config));
                         if (task.Wait(TimeSpan.FromSeconds(sla)))
                         {
@@ -458,6 +496,7 @@ namespace PluginCouchDB.Plugin
                 var response = await _client.PostAsync(getSchemaUri,
                     new StringContent(Discover.GetValidSchemaQuery(schemaQueryJson), Encoding.UTF8,
                         "application/json"));
+
                 //Logger.Info($"discover schema response: {await response.Content.ReadAsStringAsync()}");
                 response.EnsureSuccessStatusCode();
 
@@ -498,6 +537,13 @@ namespace PluginCouchDB.Plugin
                 Logger.Error(e.Message);
                 return null;
             }
+        }
+
+        private static bool IsValidDatabaseName(string dbName)
+        {
+            var isValid = Regex.IsMatch(dbName, @"^[a-z0-9_$()+-/]+$");
+            var isStartWithLetter = char.IsLetter(dbName.FirstOrDefault());
+            return isValid && isStartWithLetter;
         }
 
         private static bool IsValidJson(string strInput)

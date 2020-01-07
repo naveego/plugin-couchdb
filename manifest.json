@@ -5,7 +5,7 @@
   "apiVersion": "2",
   "versionDescription": "Version 2",
   "version": "1.0.1",
-  "iconFile": "icon.jpg",
+  "iconFile": "icon.png",
   "executable": "PluginCouchDB",
   "kind": "publisher",
   "os": "$GOOS",
