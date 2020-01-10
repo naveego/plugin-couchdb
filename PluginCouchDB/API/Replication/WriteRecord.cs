@@ -30,12 +30,16 @@ namespace PluginCouchDB.API.Replication
             {
                 var recordData = GetNamedRecordData(schema, record);
                 var databaseName = string.Concat(config.DatabaseName.Where(c => !char.IsWhiteSpace(c)));
+                var primaryKey = config.PrimaryKey;
+                
+                //generate record id for CouchDB 
+                var recordId = primaryKey.Equals("auto generate unique id")
+                    ? record.RecordId
+                    : recordData[primaryKey].ToString();
+                Logger.Info($"receive record: {recordId}");
 
-                // get recordId and remove "_id" & "_rev" fields from http put body
-                Logger.Info($"receive record: {recordData["_id"]}");
-                var recordId = recordData["_id"];
-                recordData.Remove("_id");
-                recordData.Remove("_rev");
+                if (recordData.ContainsKey("_id")) recordData.Remove("_id");
+                if (recordData.ContainsKey("_rev")) recordData.Remove("_rev");
 
                 // get all the golden records from the database
                 Logger.Info("get all golden record from the database");
@@ -49,7 +53,6 @@ namespace PluginCouchDB.API.Replication
                 var previousRecord = goldenRecord.Count > 0
                     ? goldenRecord.Find(r => recordId.ToString() == r.GetValue("id").ToString())
                     : null;
-                //Logger.Info($"previous record: {JsonConvert.SerializeObject(previousRecord, Formatting.Indented)}");
 
                 if (previousRecord == null && recordData.Count != 0)
                 {

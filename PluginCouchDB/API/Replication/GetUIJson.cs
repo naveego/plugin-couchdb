@@ -12,13 +12,12 @@ namespace PluginCouchDB.API.Replication
                 {
                     "ui:order", new[]
                     {
-                        "DatabaseName"
+                        "DatabaseName",
+                        "PrimaryKey"
                     }
                 }
             };
-
-//            var uiJsonObj = new Dictionary<string, object>();
-
+            
             return JsonConvert.SerializeObject(uiJsonObj);
         }
     }

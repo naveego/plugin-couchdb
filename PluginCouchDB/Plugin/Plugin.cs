@@ -277,9 +277,12 @@ namespace PluginCouchDB.Plugin
         public override Task<ConfigureReplicationResponse> ConfigureReplication(ConfigureReplicationRequest request,
             ServerCallContext context)
         {
+            var schemaProperties = request.Schema.Properties.Select(property => property.Name).ToList();
+            schemaProperties.Insert(0, "auto generate unique id");
+
             Logger.Info("Configuring write...");
 
-            var schemaJson = Replication.GetSchemaJson();
+            var schemaJson = Replication.GetSchemaJson(schemaProperties);
             var uiJson = Replication.GetUIJson();
 
             //user provided database name should only lowercase characters, digits and mush start with a letter
