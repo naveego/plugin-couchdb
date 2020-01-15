@@ -288,8 +288,11 @@ namespace PluginCouchDB.Plugin
             //user provided database name should only lowercase characters, digits and mush start with a letter
             try
             {
-                var databaseName = (string) JObject.Parse(request.Form?.DataJson).SelectToken("DatabaseName");
-                if (!IsValidDatabaseName(databaseName)) throw new System.Exception("Not a valid database name!");
+                //fetch and validate database name
+                var dataJson = JObject.Parse(request.Form.DataJson);
+                var databaseName = dataJson.Count != 0 ? (string) dataJson.SelectToken("DatabaseName") : "";
+                if (!IsValidDatabaseName(databaseName) && !string.IsNullOrEmpty(databaseName))
+                    throw new System.Exception("Not a valid database name!");
                 return Task.FromResult(new ConfigureReplicationResponse
                 {
                     Form = new ConfigurationFormResponse
@@ -406,8 +409,6 @@ namespace PluginCouchDB.Plugin
                             JsonConvert.DeserializeObject<ConfigureReplicationFormData>(_server.WriteSettings
                                 .Replication.SettingsJson);
 
-                        // send record to source system
-                        // timeout if it takes longer than the sla
                         Logger.Info($"send record: {record.RecordId} to source system");
                         var task = Task.Run(() => Replication.WriteRecord(_client, schema, record, config));
                         if (task.Wait(TimeSpan.FromSeconds(sla)))
@@ -446,7 +447,7 @@ namespace PluginCouchDB.Plugin
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e.ToString());
                 throw;
             }
         }

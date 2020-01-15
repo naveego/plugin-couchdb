@@ -31,28 +31,29 @@ namespace PluginCouchDB.API.Replication
                 var recordData = GetNamedRecordData(schema, record);
                 var databaseName = string.Concat(config.DatabaseName.Where(c => !char.IsWhiteSpace(c)));
                 var primaryKey = config.PrimaryKey;
-                
+
                 //generate record id for CouchDB 
                 var recordId = primaryKey.Equals("auto generate unique id")
                     ? record.RecordId
                     : recordData[primaryKey].ToString();
                 Logger.Info($"receive record: {recordId}");
 
+                //remove "_id" and "_rev" fields from record data
                 if (recordData.ContainsKey("_id")) recordData.Remove("_id");
                 if (recordData.ContainsKey("_rev")) recordData.Remove("_rev");
 
-                // get all the golden records from the database
-                Logger.Info("get all golden record from the database");
-                var response = await client.GetAsync($"/{databaseName}/_all_docs");
-                response.EnsureSuccessStatusCode();
-                var goldenRecord = JObject.Parse(await response.Content.ReadAsStringAsync())["rows"]
-                    .ToObject<List<JObject>>();
+                // find previous record in database, return null if it doesn't exist
+                var findQuery = $"{{\"selector\":{{\"_id\": {{\"$eq\":\"{recordId}\"}}}}}}";
+                var previousRecordResponse = await client.PostAsync($"{databaseName}/_find", new StringContent(
+                    findQuery, Encoding.UTF8,
+                    "application/json"));
+                previousRecordResponse.EnsureSuccessStatusCode();
+                var documents = JObject.Parse(await previousRecordResponse.Content.ReadAsStringAsync())["docs"];
 
                 // get and check previous record
                 Logger.Info("get previous record");
-                var previousRecord = goldenRecord.Count > 0
-                    ? goldenRecord.Find(r => recordId.ToString() == r.GetValue("id").ToString())
-                    : null;
+                var previousRecord = documents.ToList().FirstOrDefault();
+                Logger.Info($"previous record: {previousRecord}");
 
                 if (previousRecord == null && recordData.Count != 0)
                 {
@@ -70,7 +71,7 @@ namespace PluginCouchDB.API.Replication
                     {
                         Logger.Info($"databaseName:{databaseName} | recordId: {record.RecordId} - DELETE");
                         var deleteDocUri =
-                            $"/{databaseName}/{recordId}?{previousRecord.GetValue("value")["rev"]}";
+                            $"/{databaseName}/{recordId}?{previousRecord["rev"]}";
                         await client.DeleteAsync(deleteDocUri);
                     }
                     else
@@ -79,7 +80,7 @@ namespace PluginCouchDB.API.Replication
                         Logger.Info($"shapeId; {databaseName} | recordId: {record.RecordId} - UPSERT");
                         var reviseDocUri = $"/{databaseName}/{recordId}";
                         // add _rev to recordData
-                        recordData.Add("_rev", previousRecord.GetValue("value")["rev"]);
+                        recordData.Add("_rev", previousRecord["rev"]);
                         await client.PutAsync(reviseDocUri,
                             new StringContent(JsonConvert.SerializeObject(recordData), Encoding.UTF8,
                                 "application/json"));

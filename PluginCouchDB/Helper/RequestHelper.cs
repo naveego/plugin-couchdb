@@ -44,6 +44,7 @@ namespace PluginCouchDB.Helper
             {
                 var uri = _settings.ToResourceUri(resource);
                 var client = _client;
+                client.DefaultRequestHeaders.Clear();
                 //client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", token);
                 //Logger.Info($"get request: {uri}");
                 var response = await client.GetAsync(uri);
@@ -84,6 +85,7 @@ namespace PluginCouchDB.Helper
                 var uri = _settings.ToResourceUri(resource);
 
                 var client = _client;
+                client.DefaultRequestHeaders.Clear();
                 //client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", token);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
@@ -115,6 +117,7 @@ namespace PluginCouchDB.Helper
 
                 var encoded = Convert.ToBase64String(Encoding.ASCII.GetBytes(
                     String.Format("{0}:{1}", _settings.Username, _settings.Password)));
+                client.DefaultRequestHeaders.Clear();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", encoded);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 //Logger.Info($"uri: {uri}, body: {await json.ReadAsStringAsync()}");
@@ -158,6 +161,7 @@ namespace PluginCouchDB.Helper
                 var uri = _settings.ToResourceUri(resource);
 
                 var client = _client;
+                client.DefaultRequestHeaders.Clear();
                 //client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", token);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 //Logger.Info($"uri: {uri}, body: {await json.ReadAsStringAsync()}");
@@ -199,6 +203,7 @@ namespace PluginCouchDB.Helper
                 var uri = _settings.ToResourceUri(resource);
 
                 var client = _client;
+                client.DefaultRequestHeaders.Clear();
                 //client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", token);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
@@ -239,6 +244,7 @@ namespace PluginCouchDB.Helper
                 var uri = _settings.ToResourceUri(resource);
 
                 var client = _client;
+                client.DefaultRequestHeaders.Clear();
                 //client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", token);
 
                 var response = await client.DeleteAsync(uri);
