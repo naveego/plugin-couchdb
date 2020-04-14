@@ -6,11 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="API\Discover" />
-      <Folder Include="API\Read" />
       <Folder Include="API\Replication" />
-      <Folder Include="API\Write" />
-      <Folder Include="DataContracts" />
       <Folder Include="Publisher" />
     </ItemGroup>
 
@@ -20,6 +16,10 @@
       <PackageReference Include="Grpc.HealthCheck" Version="2.24.0" />
       <PackageReference Include="Grpc.Tools" Version="2.24.0" />
       <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="API\Read\GetAllRecords.cs" />
     </ItemGroup>
 
     <ItemGroup>

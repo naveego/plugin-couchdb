@@ -2,6 +2,8 @@ namespace PluginCouchDB.DataContracts
 {
     public class ConfigureReplicationFormData
     {
-        public string ShapeName { get; set; }
+        public string DatabaseName { get; set; }
+        
+        public string PrimaryKey { get; set; }
     }
 }

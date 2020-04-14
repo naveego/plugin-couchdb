@@ -4,8 +4,8 @@
   "description": "Publisher which connects to Couch DB",
   "apiVersion": "2",
   "versionDescription": "Version 2",
-  "version": "1.0.0",
-  "iconFile": "icon.jpg",
+  "version": "1.0.1",
+  "iconFile": "icon.png",
   "executable": "PluginCouchDB",
   "kind": "publisher",
   "os": "$GOOS",
@@ -13,15 +13,27 @@
   "canProduceMultipleSchemas": true,
   "canAcceptQueryBasedSchemas": true,
   "canUseOAuth": false,
-  "canWrite": true,
+  "canWrite": false,
   "canConfigureReplication": true,
   "canWriteReplication": true,
+  "querySchema": {
+    "ui": {
+      "ui:widget": "code",
+      "ui:options": {
+        "language": "json"
+      }
+    },
+    "schema": {
+      "type": "string"
+    }
+  },
   "configSchema": {
     "ui": {
       "ui:order": [
         "Hostname",
         "Username",
-        "Password"
+        "Password",
+        "DatabaseName"
       ],
       "Password": {
         "ui:widget": "password"
@@ -33,7 +45,7 @@
         "Hostname" : {
           "type": "string",
           "title": "Hostname",
-          "description": "The hostname of the Sisense server ex. localhost:8081"
+          "description": "The hostname of the CouchDB server ex. localhost:5984"
         },
         "Username": {
           "type": "string",
@@ -44,12 +56,18 @@
           "type": "string",
           "title": "Password",
           "description": "The password to use for authentication"
+        },
+        "DatabaseName": {
+          "type": "string",
+          "title": "Database Name",
+          "description": "Name for your data source in CouchDB"
         }
       },
       "required": [
         "Hostname",
         "Username",
-        "Password"
+        "Password",
+        "DatabaseName"
       ]
     }
   }

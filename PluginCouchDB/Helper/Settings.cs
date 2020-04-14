@@ -1,4 +1,5 @@
 using System;
+using System.Web;
 
 namespace PluginCouchDB.Helper
 {
@@ -7,6 +8,7 @@ namespace PluginCouchDB.Helper
         public string Hostname { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
+        public string DatabaseName { get; set; }
 
         /// <summary>
         /// Validates the settings input object
@@ -23,13 +25,18 @@ namespace PluginCouchDB.Helper
             {
                 throw new Exception("the Username property must be set");
             }
-            
+
             if (String.IsNullOrEmpty(Password))
             {
                 throw new Exception("the Password property must be set");
             }
+
+            if (String.IsNullOrEmpty(DatabaseName))
+            {
+                throw new Exception("the database name must be set");
+            }
         }
-        
+
         /// <summary>
         /// Converts a resource to a resource uri
         /// </summary>
@@ -37,7 +44,9 @@ namespace PluginCouchDB.Helper
         /// <returns></returns>
         public string ToResourceUri(string resource)
         {
-            return String.Format("http://{0}/api/v1/{1}", Hostname, resource.TrimStart('/'));
+            var uri = String.Format("http://{0}:{1}@{2}/{3}", HttpUtility.UrlEncode(Username),
+                HttpUtility.UrlEncode(Password), Hostname, resource.TrimStart('/'));
+            return uri;
         }
     }
 }

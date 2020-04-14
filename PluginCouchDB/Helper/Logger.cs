@@ -15,7 +15,7 @@ namespace PluginCouchDB.Helper
             Off
         }
         
-        private static string _path = @"plugin-salesforce-log.txt";
+        private static string _path = @"plugin-couchdb-log.txt";
         private static LogLevel _level = LogLevel.Info;
         private static ReaderWriterLockSlim _readWriteLock = new ReaderWriterLockSlim();
         
