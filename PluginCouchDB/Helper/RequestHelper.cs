@@ -35,7 +35,7 @@ namespace PluginCouchDB.Helper
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message);
                 throw;
             }
 
@@ -53,7 +53,7 @@ namespace PluginCouchDB.Helper
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message);
                 throw;
             }
         }
@@ -75,7 +75,7 @@ namespace PluginCouchDB.Helper
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message);
                 throw;
             }
 
@@ -95,7 +95,7 @@ namespace PluginCouchDB.Helper
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message);
                 throw;
             }
         }
@@ -128,7 +128,7 @@ namespace PluginCouchDB.Helper
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message);
                 throw;
             }
         }
@@ -151,7 +151,7 @@ namespace PluginCouchDB.Helper
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message);
                 throw;
             }
 
@@ -171,7 +171,7 @@ namespace PluginCouchDB.Helper
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message);
                 throw;
             }
         }
@@ -193,7 +193,7 @@ namespace PluginCouchDB.Helper
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message);
                 throw;
             }
 
@@ -213,7 +213,7 @@ namespace PluginCouchDB.Helper
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message);
                 throw;
             }
         }
@@ -234,7 +234,7 @@ namespace PluginCouchDB.Helper
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message);
                 throw;
             }
 
@@ -253,7 +253,7 @@ namespace PluginCouchDB.Helper
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message);
                 throw;
             }
         }

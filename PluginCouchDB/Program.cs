@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Linq;
 using Grpc.Core;
+using Naveego.Sdk.Plugins;
 using PluginCouchDB.Helper;
-using Pub;
+
 
 namespace PluginCouchDB
 {
@@ -15,7 +16,7 @@ namespace PluginCouchDB
                 // Add final chance exception handler
                 AppDomain.CurrentDomain.UnhandledException += (sender, eventArgs) =>
                 {
-                    Logger.Error($"died: {eventArgs.ExceptionObject}");
+                    Logger.Error(null, $"died: {eventArgs.ExceptionObject}");
                 };
                 
                 // clean old logs on start up
@@ -47,7 +48,7 @@ namespace PluginCouchDB
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message);
             }
         }
     }

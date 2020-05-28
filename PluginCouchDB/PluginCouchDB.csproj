@@ -2,19 +2,16 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>netcoreapp2.2</TargetFramework>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <LangVersion>default</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
       <Folder Include="API\Replication" />
-      <Folder Include="Publisher" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Google.Protobuf" Version="3.10.1" />
-      <PackageReference Include="Grpc" Version="2.24.0" />
-      <PackageReference Include="Grpc.HealthCheck" Version="2.24.0" />
-      <PackageReference Include="Grpc.Tools" Version="2.24.0" />
+      <PackageReference Include="Naveego.Sdk" Version="1.1.0" />
       <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     </ItemGroup>
 

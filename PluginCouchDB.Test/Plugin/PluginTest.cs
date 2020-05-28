@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Grpc.Core;
-using Pub;
+using Naveego.Sdk.Plugins;
 using RichardSzalay.MockHttp;
 using Xunit;
-using Record = Pub.Record;
+using Record = Naveego.Sdk.Plugins.Record;
+
 
 namespace PluginCouchDB.Test
 {
@@ -30,7 +31,7 @@ namespace PluginCouchDB.Test
                     "{\"docs\":[{\"_id\":\"1000\", \"title\":\"Test1\"},{\"_id\":\"1001\",\"title\":\"Test2\"},{\"_id\":\"6e1295ed6c\", \"title\":\"Test3\"},{\"_id\":\"6e1295ed6b\",\"title\":\"Test4\"},{\"_id\":\"6e1295ed6e\",\"title\":\"Test5\"}]}");
 
             mockHttp.When("http://test:password@hostname:5984/_all_dbs")
-                .Respond("application/json", "{}");
+                .Respond("application/json", "[]");
 
             mockHttp.When("http://test:password@hostname:5984/DatabaseName/_all_docs")
                 .Respond("application/json",

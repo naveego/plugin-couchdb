@@ -4,10 +4,10 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Naveego.Sdk.Plugins;
 using Newtonsoft.Json;
 using PluginCouchDB.DataContracts;
 using PluginCouchDB.Helper;
-using Pub;
 using Newtonsoft.Json.Linq;
 
 namespace PluginCouchDB.API.Replication
@@ -91,7 +91,7 @@ namespace PluginCouchDB.API.Replication
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message);
                 throw;
             }
         }

@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using Grpc.Core;
+using Naveego.Sdk.Plugins;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PluginCouchDB.API.Discover;
@@ -15,7 +16,7 @@ using PluginCouchDB.API.Read;
 using PluginCouchDB.API.Replication;
 using PluginCouchDB.DataContracts;
 using PluginCouchDB.Helper;
-using Pub;
+
 
 namespace PluginCouchDB.Plugin
 {
@@ -44,6 +45,8 @@ namespace PluginCouchDB.Plugin
         /// <returns>A message indicating connection success</returns>
         public override async Task<ConnectResponse> Connect(ConnectRequest request, ServerCallContext context)
         {
+            Logger.Info("Connecting...");
+
             // validate settings passed in
             try
             {
@@ -52,7 +55,7 @@ namespace PluginCouchDB.Plugin
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message, context);
                 return new ConnectResponse
                 {
                     OauthStateJson = request.OauthStateJson,
@@ -69,8 +72,14 @@ namespace PluginCouchDB.Plugin
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
-                throw;
+                Logger.Error(e, e.Message, context);
+                return new ConnectResponse
+                {
+                    OauthStateJson = request.OauthStateJson,
+                    ConnectionError = "",
+                    OauthError = "",
+                    SettingsError = e.Message
+                };
             }
 
             // attempt to call the CouchDB API api
@@ -89,7 +98,7 @@ namespace PluginCouchDB.Plugin
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message, context);
 
                 return new ConnectResponse
                 {
@@ -138,6 +147,7 @@ namespace PluginCouchDB.Plugin
         public override async Task<DiscoverSchemasResponse> DiscoverSchemas(DiscoverSchemasRequest request,
             ServerCallContext context)
         {
+            Logger.SetLogPrefix("discover");
             Logger.Info("Discovering Schemas...");
 
             DiscoverSchemasResponse discoverSchemasResponse = new DiscoverSchemasResponse();
@@ -169,8 +179,8 @@ namespace PluginCouchDB.Plugin
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
-                throw;
+                Logger.Error(e, e.Message, context);
+                return new DiscoverSchemasResponse();
             }
         }
 
@@ -188,6 +198,7 @@ namespace PluginCouchDB.Plugin
             var limit = request.Limit;
             var limitFlag = request.Limit > 0;
 
+            Logger.SetLogPrefix(request.JobId);
             Logger.Info($"Publishing records for schema: {schema.Name}");
 
             try
@@ -263,8 +274,7 @@ namespace PluginCouchDB.Plugin
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
-                throw;
+                Logger.Error(e, e.Message, context);
             }
         }
 
@@ -277,10 +287,11 @@ namespace PluginCouchDB.Plugin
         public override Task<ConfigureReplicationResponse> ConfigureReplication(ConfigureReplicationRequest request,
             ServerCallContext context)
         {
+            Logger.SetLogPrefix("configure_replication");
+            Logger.Info($"Configuring write for schema name {request.Schema.Name}...");
+
             var schemaProperties = request.Schema.Properties.Select(property => property.Name).ToList();
             schemaProperties.Insert(0, "auto generate unique id");
-
-            Logger.Info("Configuring write...");
 
             var schemaJson = Replication.GetSchemaJson(schemaProperties);
             var uiJson = Replication.GetUIJson();
@@ -307,7 +318,7 @@ namespace PluginCouchDB.Plugin
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message, context);
                 return Task.FromResult(new ConfigureReplicationResponse
                 {
                     Form = new ConfigurationFormResponse
@@ -333,6 +344,7 @@ namespace PluginCouchDB.Plugin
         {
             try
             {
+                Logger.SetLogPrefix(request.DataVersions.JobId);
                 Logger.Info("Preparing write...");
                 _server.WriteConfigured = false;
 
@@ -340,8 +352,10 @@ namespace PluginCouchDB.Plugin
                 {
                     CommitSLA = request.CommitSlaSeconds,
                     Schema = request.Schema,
-                    Replication = request.Replication
+                    Replication = request.Replication,
+                    DataVersions = request.DataVersions,
                 };
+
 
                 _server.WriteSettings = writeSettings;
                 _server.WriteConfigured = true;
@@ -369,8 +383,8 @@ namespace PluginCouchDB.Plugin
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
-                throw;
+                Logger.Error(e, e.Message);
+                return await Task.FromResult(new PrepareWriteResponse());
             }
         }
 
@@ -447,7 +461,7 @@ namespace PluginCouchDB.Plugin
             }
             catch (Exception e)
             {
-                Logger.Error(e.ToString());
+                Logger.Error(e, e.Message, context);
                 throw;
             }
         }
@@ -489,7 +503,7 @@ namespace PluginCouchDB.Plugin
                 //check if query is empty or invalid json
                 if (string.IsNullOrWhiteSpace(schema.Query) || !IsValidJson(schema.Query))
                 {
-                    Logger.Error("Invalid schema query");
+                    Logger.Error(null, "Invalid schema query");
                     return null;
                 }
 
@@ -538,7 +552,7 @@ namespace PluginCouchDB.Plugin
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                Logger.Error(e, e.Message);
                 return null;
             }
         }
@@ -564,18 +578,18 @@ namespace PluginCouchDB.Plugin
                 catch (JsonReaderException jex)
                 {
                     //Exception in parsing json
-                    Logger.Error(jex.Message);
+                    Logger.Error(jex, jex.Message);
                     return false;
                 }
                 catch (Exception ex) //some other exception
                 {
-                    Logger.Error(ex.ToString());
+                    Logger.Error(ex, ex.ToString());
                     return false;
                 }
             }
             else
             {
-                Logger.Error("Content must be application/json");
+                Logger.Error(null, "Content must be application/json");
                 return false;
             }
         }

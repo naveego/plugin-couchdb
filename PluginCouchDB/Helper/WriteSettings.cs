@@ -1,4 +1,6 @@
-using Pub;
+
+
+using Naveego.Sdk.Plugins;
 
 namespace PluginCouchDB.Helper
 {
@@ -7,6 +9,7 @@ namespace PluginCouchDB.Helper
         public int CommitSLA { get; set; }
         public Schema Schema { get; set; }
         public ReplicationWriteRequest Replication { get; set; }
+        public DataVersions DataVersions { get; set; }
 
         /// <summary>
         /// Returns if mode is set to replication

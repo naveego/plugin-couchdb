@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Naveego.Sdk.Plugins;
 using Newtonsoft.Json.Linq;
-using Pub;
+
 
 namespace PluginCouchDB.API.Discover
 {
